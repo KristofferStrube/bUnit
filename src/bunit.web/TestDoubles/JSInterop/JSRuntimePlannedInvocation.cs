@@ -84,4 +84,42 @@ namespace Bunit.TestDoubles
 		/// </summary>
 		public void SetVoid() => SetResultBase(default!);
 	}
+
+	/// <summary>
+	/// Represents a planned IJSInProcess invocation of a JavaScript function with specific arguments.
+	/// </summary>
+	/// <typeparam name="TResult">The expect result type.</typeparam>
+	public class IJSInProcessRuntimePlannedInvocation<TResult> : JSRuntimePlannedInvocationBase<TResult>
+	{
+		private readonly Func<IReadOnlyList<object?>, bool> _invocationMatcher;
+
+		/// <summary>
+		/// The expected identifier for the function to invoke.
+		/// </summary>
+		public string Identifier { get; }
+
+		/// <summary>
+		/// The expected result when invoking the function
+		/// </summary>
+		public TResult Result { get; }
+
+		internal IJSInProcessRuntimePlannedInvocation(string identifier, TResult result, Func<IReadOnlyList<object?>, bool> matcher)
+		{
+			Identifier = identifier;
+			_invocationMatcher = matcher;
+			Result = result;
+		}
+
+		internal override bool Matches(JSRuntimeInvocation invocation)
+		{
+			return Identifier.Equals(invocation.Identifier, StringComparison.Ordinal)
+				&& _invocationMatcher(invocation.Arguments);
+		}
+
+		internal bool Matches(IJSInProcessRuntimeInvocation invocation)
+		{
+			return Identifier.Equals(invocation.Identifier, StringComparison.Ordinal)
+				&& _invocationMatcher(invocation.Arguments);
+		}
+	}
 }

@@ -380,5 +380,56 @@ namespace Bunit.TestDoubles.JSInterop
 			plannedInvoke.Invocations.Count.ShouldBe(1);
 			plannedCatchall.Invocations.Count.ShouldBe(0);
 		}
+
+		[Fact(DisplayName = "Mock returns default value from IJSInProcessRuntime's invoke method in loose mode without invocation setup")]
+		public void Test023()
+		{
+			var sut = new MockJSRuntimeInvokeHandler(JSRuntimeMockMode.Loose);
+
+			var result = ((IJSInProcessRuntime)sut.ToJSRuntime()).Invoke<object>("ident", Array.Empty<object>());
+
+			result.ShouldBe(default);
+		}
+
+		[Fact(DisplayName = "After IJSInProcessRuntime invocation a invocation should be visible from the Invocations list")]
+		public void Test024()
+		{
+			var identifier = "fooFunc";
+			var args = new[] { "bar", "baz" };
+			using var cts = new CancellationTokenSource();
+			var sut = new MockJSRuntimeInvokeHandler(JSRuntimeMockMode.Loose);
+
+			var _ = ((IJSInProcessRuntime)sut.ToJSRuntime()).Invoke<object>(identifier, args);
+
+			var invocation = sut.InProcessInvocations[identifier].Single();
+			invocation.Identifier.ShouldBe(identifier);
+			invocation.Arguments.ShouldBe(args);
+		}
+
+		[Fact(DisplayName = "IJSInProcessRuntime invocations receive the result set in a planned invocation")]
+		public void Test025()
+		{
+			var identifier = "func";
+			var sut = new MockJSRuntimeInvokeHandler(JSRuntimeMockMode.Strict);
+
+			var expectedResult = Guid.NewGuid();
+			sut.SetupInProcess<Guid>(identifier, expectedResult);
+
+			var i = ((IJSInProcessRuntime)sut.ToJSRuntime()).Invoke<Guid>(identifier);
+
+			i.ShouldBe(expectedResult);
+		}
+
+		[Fact(DisplayName = "Mock throws exception when in strict mode and IJSInProcessRuntime invocation has not been setup")]
+		public void Test026()
+		{
+			var sut = new MockJSRuntimeInvokeHandler(JSRuntimeMockMode.Strict);
+			var identifier = "func";
+			var args = new[] { "bar", "baz" };
+
+			var exception = Should.Throw<UnplannedIJSInProcessInvocationException>(() => { var _ = ((IJSInProcessRuntime)sut.ToJSRuntime()).Invoke<object>(identifier, args); });
+			exception.Invocation.Identifier.ShouldBe(identifier);
+			exception.Invocation.Arguments.ShouldBe(args);
+		}
 	}
 }

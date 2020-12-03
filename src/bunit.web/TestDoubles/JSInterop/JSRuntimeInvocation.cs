@@ -92,4 +92,83 @@ namespace Bunit.TestDoubles
 			return true;
 		}
 	}
+
+	/// <summary>
+	/// Represents an synchronous invocation of JavaScript via the JSRuntime Mock
+	/// </summary>
+	public readonly struct IJSInProcessRuntimeInvocation : IEquatable<IJSInProcessRuntimeInvocation>
+	{
+		/// <summary>
+		/// Gets the identifier used in the invocation.
+		/// </summary>
+		public string Identifier { get; }
+
+		/// <summary>
+		/// Gets the arguments used in the invocation.
+		/// </summary>
+		public IReadOnlyList<object?> Arguments { get; }
+
+
+		/// <summary>
+		/// Creates an instance of the <see cref="JSRuntimeInvocation"/>.
+		/// </summary>
+		public IJSInProcessRuntimeInvocation(string identifier, object?[]? args)
+		{
+			Identifier = identifier;
+			Arguments = args ?? Array.Empty<object?>();
+		}
+
+		/// <inheritdoc/>
+		public bool Equals(IJSInProcessRuntimeInvocation other)
+			=> Identifier.Equals(other.Identifier, StringComparison.Ordinal)
+			&& ArgumentsEqual(Arguments, other.Arguments);
+
+		/// <inheritdoc/>
+		public override bool Equals(object? obj) => obj is IJSInProcessRuntimeInvocation other && Equals(other);
+
+		/// <inheritdoc/>
+		public override int GetHashCode()
+		{
+			var hash = new HashCode();
+			hash.Add(Identifier);
+
+			for (var i = 0; i < Arguments.Count; i++)
+			{
+				hash.Add(Arguments[i]);
+			}
+
+			return hash.ToHashCode();
+		}
+
+		/// <inheritdoc/>
+		public static bool operator ==(IJSInProcessRuntimeInvocation left, IJSInProcessRuntimeInvocation right) => left.Equals(right);
+
+		/// <inheritdoc/>
+		public static bool operator !=(IJSInProcessRuntimeInvocation left, IJSInProcessRuntimeInvocation right) => !(left == right);
+
+		private static bool ArgumentsEqual(IReadOnlyList<object?> left, IReadOnlyList<object?> right)
+		{
+			if (left.Count != right.Count)
+				return false;
+
+			for (var i = 0; i < left.Count; i++)
+			{
+				var l = left[i];
+				var r = right[i];
+
+				if (l is null)
+				{
+					if (r is object)
+						return false;
+				}
+				else
+				{
+					if (!l.Equals(right[i]))
+						return false;
+				}
+			}
+
+			return true;
+		}
+	}
 }
